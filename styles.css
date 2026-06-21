@@ -66,3 +66,26 @@ body{margin:0;background:var(--bg);height:100vh;display:flex;flex-direction:colu
   min-width:24px;
   text-align:center;
 }
+
+.reply-box{
+  font-size:12px;
+  background:#f0f0f0;
+  padding:4px 6px;
+  border-left:3px solid #075e54;
+  margin-bottom:5px;
+  border-radius:6px;
+  color:#333;
+}
+
+.reply-btn{
+  position:absolute;
+  right:6px;
+  top:6px;
+  font-size:14px;
+  cursor:pointer;
+  opacity:0.6;
+}
+
+.reply-btn:hover{
+  opacity:1;
+}
