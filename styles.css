@@ -29,19 +29,24 @@ body{margin:0;background:var(--bg);height:100vh;display:flex;flex-direction:colu
 
 .reaction-menu{
   position:absolute;
-  top:-38px;
+  top:-35px;
   right:0;
   background:white;
   border-radius:20px;
   padding:4px 8px;
-  display:none;
+  display:flex;
   gap:6px;
   box-shadow:0 2px 10px rgba(0,0,0,.15);
-  z-index:100;
+
+  opacity:0;
+  pointer-events:none;
+  transition:0.15s;
 }
 
-.message:hover .reaction-menu{
-  display:flex;
+.message:hover .reaction-menu,
+.reaction-menu:hover{
+  opacity:1;
+  pointer-events:auto;
 }
 
 .reaction-btn{
