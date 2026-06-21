@@ -1,6 +1,6 @@
 // CONFIGURACIÓN: reemplaza con tu config de Firebase (ver instrucciones)
 const firebaseConfig = {
-  apiKey: "AIzaSyAm-qj9NaW3L-_tlTX8kJ1FKfFg3G1UrIY",
+  apiKey: "AIzaSyAm-qj9NaW3L-_tlTX8kJ1FKfFg3G1UrYI",
   authDomain: "hat-temporal-ag.firebaseapp.com",
   projectId: "chat-temporal-ag",
   storageBucket: "chat-temporal-ag.firebasestorage.app",
@@ -9,13 +9,15 @@ const firebaseConfig = {
   measurementId: "G-N7SNC1WH5B"
 };
 
-// Clave requerida (según tu requerimiento)
 const APP_PASSWORD = "10E)sF@4M1$b]";
 
 let db, storage;
 let currentName = null;
 let messagesCol;
 let unsubscribeListener = null;
+
+// 🆕 estado global para reply
+let replyTo = null;
 
 // DOM
 const loginScreen = document.getElementById('login-screen');
@@ -43,7 +45,7 @@ function tryEnter(){
   const pwd = passwordInput.value;
   if(!name){ loginError.textContent = 'Ingresa tu nombre.'; return; }
   if(pwd !== APP_PASSWORD){ loginError.textContent = 'Clave incorrecta.'; return; }
-  // init firebase y UI
+
   initFirebase();
   currentName = name;
   sessionStorage.setItem('chat_name', currentName);
@@ -51,7 +53,6 @@ function tryEnter(){
 }
 
 function logout(){
-  // limpiar
   sessionStorage.removeItem('chat_name');
   currentName = null;
   if(unsubscribeListener) unsubscribeListener();
@@ -62,7 +63,6 @@ function logout(){
 function showChat(){
   loginScreen.classList.add('hidden');
   chatScreen.classList.remove('hidden');
-  // cargar mensajes en tiempo real
   subscribeMessages();
 }
 
@@ -75,82 +75,171 @@ function initFirebase(){
   }
 }
 
+// 🆕 scroll inteligente (solo baja si el usuario está abajo)
+function smartScroll(){
+  const threshold = 120;
+  const atBottom = messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight < threshold;
+  if(atBottom){
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+}
+
 function subscribeMessages(){
   if(!messagesCol) return;
+
   unsubscribeListener = messagesCol
     .orderBy('timestamp')
     .limit(5000)
     .onSnapshot(snapshot => {
+
       messagesEl.innerHTML = '';
+
       snapshot.forEach(doc => {
         const data = doc.data();
-        renderMessage(data);
+        renderMessage(data, doc.id); // 🆕 pasamos ID
       });
-      // mantener scroll abajo
-      messagesEl.scrollTop = messagesEl.scrollHeight;
-    }, err => {
-      console.error('listen error', err);
+
+      smartScroll(); // 🔁 reemplazo del scroll forzado
     });
 }
 
-function renderMessage(msg){
+// 🆕 seleccionar mensaje para responder
+function setReply(msg, id){
+  replyTo = { id, text: msg.text, name: msg.name };
+  textInput.placeholder = `Respondiendo a ${msg.name}...`;
+}
+
+// 🆕 reacciones
+async function addReaction(id, emoji){
+  const docRef = messagesCol.doc(id);
+  const doc = await docRef.get();
+  const data = doc.data();
+
+  let reactions = data.reactions || [];
+
+  reactions.push(emoji);
+
+  await docRef.update({ reactions });
+}
+
+function renderMessage(msg, id){
   const wrapper = document.createElement('div');
   wrapper.className = 'message ' + ((msg.name === currentName) ? 'me' : 'other');
+
+  // 🆕 reply preview
+  if(msg.replyTo){
+    const replyBox = document.createElement('div');
+    replyBox.style.fontSize = '12px';
+    replyBox.style.opacity = '0.7';
+    replyBox.textContent = `↩ ${msg.replyTo.name}: ${msg.replyTo.text}`;
+    wrapper.appendChild(replyBox);
+  }
+
   const meta = document.createElement('div');
   meta.className = 'meta';
-  const time = msg.timestamp && msg.timestamp.toDate ? msg.timestamp.toDate() : new Date(msg.timestamp || Date.now());
+
+  const time = msg.timestamp && msg.timestamp.toDate
+    ? msg.timestamp.toDate()
+    : new Date(msg.timestamp || Date.now());
+
   meta.textContent = `${msg.name || 'Anónimo'} · ${time.toLocaleString()}`;
   wrapper.appendChild(meta);
+
   if(msg.text){
     const p = document.createElement('div');
     p.textContent = msg.text;
     wrapper.appendChild(p);
   }
+
   if(msg.imageUrl){
     const img = document.createElement('img');
     img.src = msg.imageUrl;
-    img.alt = "imagen";
     wrapper.appendChild(img);
   }
+
+  // 🆕 reacciones visibles
+  if(msg.reactions?.length){
+    const reactBox = document.createElement('div');
+    reactBox.style.fontSize = '14px';
+    reactBox.textContent = msg.reactions.join(' ');
+    wrapper.appendChild(reactBox);
+  }
+
+  // 🆕 acciones (reply + reactions)
+  const actions = document.createElement('div');
+  actions.style.fontSize = '12px';
+  actions.style.marginTop = '5px';
+
+  // reply
+  const replyBtn = document.createElement('button');
+  replyBtn.textContent = "Responder";
+  replyBtn.onclick = () => setReply(msg, id);
+
+  // reacciones rápidas
+  const emojis = ["👍","❤️","😂","😢","⭐"];
+
+  const reactContainer = document.createElement('span');
+  emojis.forEach(e => {
+    const b = document.createElement('button');
+    b.textContent = e;
+    b.onclick = () => addReaction(id, e);
+    reactContainer.appendChild(b);
+  });
+
+  actions.appendChild(replyBtn);
+  actions.appendChild(reactContainer);
+
+  wrapper.appendChild(actions);
+
   messagesEl.appendChild(wrapper);
 }
 
 async function sendMessage(){
   const text = textInput.value.trim();
   const file = fileInput.files[0];
+
   if(!text && !file) return;
   sendBtn.disabled = true;
 
   try {
     let imageUrl = null;
+
     if(file){
       const path = `images/${Date.now()}_${Math.random().toString(36).slice(2)}_${file.name}`;
       const ref = storage.ref().child(path);
       await ref.put(file);
       imageUrl = await ref.getDownloadURL();
     }
+
     const payload = {
       name: currentName || 'Anónimo',
       text: text || null,
       imageUrl: imageUrl || null,
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+
+      // 🆕 reply payload
+      replyTo: replyTo || null,
+
+      reactions: []
     };
+
     await messagesCol.add(payload);
+
     textInput.value = '';
     fileInput.value = '';
+    replyTo = null;
+    textInput.placeholder = "Escribe un mensaje...";
   } catch(err){
     console.error('send error', err);
-    alert('Error al enviar. Revisa la consola.');
+    alert('Error al enviar.');
   } finally {
     sendBtn.disabled = false;
   }
 }
 
-// Si hay nombre guardado en sesión y la contraseña fue validada anteriormente (navegador nuevo no guarda password):
 document.addEventListener('DOMContentLoaded', () => {
   const savedName = sessionStorage.getItem('chat_name');
   if(savedName){
     nameInput.value = savedName;
-    // De todas formas requiere volver a ingresar la clave por seguridad en esta implementación
   }
 });
