@@ -27,27 +27,26 @@ body{margin:0;background:var(--bg);height:100vh;display:flex;flex-direction:colu
   overflow-y: auto;
   scroll-behavior: smooth;
 }
-.message {
-  position: relative;
+.message .reply-box {
+  font-size: 12px;
+  opacity: 0.7;
+  border-left: 3px solid #ccc;
+  padding-left: 6px;
+  margin-bottom: 4px;
 }
-
-.reaction-bar {
-  display: none;
-  position: absolute;
-  right: 10px;
-  top: -10px;
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 20px;
-  padding: 3px 6px;
-  gap: 4px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-  z-index: 10;
+.message .reactions {
+  margin-top: 4px;
+  font-size: 14px;
+  opacity: 0.9;
 }
-
-.reaction-bar button {
+.message button {
+  margin-right: 4px;
+  cursor: pointer;
   border: none;
   background: transparent;
-  cursor: pointer;
-  font-size: 16px;
+  font-size: 12px;
+}
+
+.message button:hover {
+  opacity: 0.7;
 }
