@@ -84,7 +84,7 @@ function subscribeMessages(){
       messagesEl.innerHTML = '';
       snapshot.forEach(doc => {
         const data = doc.data();
-        renderMessage(data);
+        renderMessage(doc.id, data);
       });
       // mantener scroll abajo
       messagesEl.scrollTop = messagesEl.scrollHeight;
@@ -93,24 +93,52 @@ function subscribeMessages(){
     });
 }
 
-function renderMessage(msg){
+function renderMessage(messageId, msg){
   const wrapper = document.createElement('div');
   wrapper.className = 'message ' + ((msg.name === currentName) ? 'me' : 'other');
+
   const meta = document.createElement('div');
   meta.className = 'meta';
-  const time = msg.timestamp && msg.timestamp.toDate ? msg.timestamp.toDate() : new Date(msg.timestamp || Date.now());
+
+  const time = msg.timestamp && msg.timestamp.toDate
+    ? msg.timestamp.toDate()
+    : new Date(msg.timestamp || Date.now());
+
   meta.textContent = `${msg.name || 'Anónimo'} · ${time.toLocaleString()}`;
+
   wrapper.appendChild(meta);
+
   if(msg.text){
     const p = document.createElement('div');
     p.textContent = msg.text;
     wrapper.appendChild(p);
   }
+
   if(msg.imageUrl){
     const img = document.createElement('img');
     img.src = msg.imageUrl;
     img.alt = "imagen";
     wrapper.appendChild(img);
+  }
+
+  // ===== MENÚ DE REACCIONES =====
+  const reactionMenu = document.createElement('div');
+  reactionMenu.className = 'reaction-menu';
+  const reactions = ['👍','❤️','😂','😮','😢','➕'];
+  reactions.forEach(emoji => {
+    const btn = document.createElement('span');
+    btn.className = 'reaction-btn';
+    btn.textContent = emoji;
+    btn.onclick = () => reactToMessage(messageId, emoji);
+    reactionMenu.appendChild(btn);
+  });
+  wrapper.appendChild(reactionMenu);
+  // ===== REACCIÓN GUARDADA =====
+  if(msg.reactions && msg.reactions[currentName]){
+    const reactionBadge = document.createElement('div');
+    reactionBadge.className = 'message-reaction';
+    reactionBadge.textContent = msg.reactions[currentName];
+    wrapper.appendChild(reactionBadge);
   }
   messagesEl.appendChild(wrapper);
 }
@@ -148,6 +176,45 @@ async function sendMessage(){
 
 // Si hay nombre guardado en sesión y la contraseña fue validada anteriormente (navegador nuevo no guarda password):
 document.addEventListener('DOMContentLoaded', () => {
+  async function reactToMessage(messageId, emoji){
+
+  try{
+
+    if(emoji === '➕'){
+
+      const customEmoji = prompt(
+        'Abre el selector de emojis (Win + .) y pega aquí tu emoji'
+      );
+
+      if(!customEmoji) return;
+
+      emoji = customEmoji;
+    }
+
+    // Obtener documento actual para no sobrescribir reacciones existentes
+    const msgRef = messagesCol.doc(messageId);
+    const doc = await msgRef.get();
+    const data = doc.data();
+
+    const currentReactions = data.reactions || {};
+
+    // toggle: si ya tiene la misma reacción, la quita
+    if(currentReactions[currentName] === emoji){
+      delete currentReactions[currentName];
+    } else {
+      currentReactions[currentName] = emoji;
+    }
+
+    await msgRef.set({
+      reactions: currentReactions
+    }, { merge:true });
+
+  }
+  catch(err){
+    console.error(err);
+  }
+
+}
   const savedName = sessionStorage.getItem('chat_name');
   if(savedName){
     nameInput.value = savedName;
