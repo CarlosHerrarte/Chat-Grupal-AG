@@ -165,41 +165,33 @@ function renderMessage(msg, id){
     wrapper.appendChild(reactBox);
   }
 
-// 🆕 acciones (reply + hover reactions)
-const actions = document.createElement('div');
-actions.className = 'actions';
+  // 🆕 acciones (reply + reactions)
+  const actions = document.createElement('div');
+  actions.style.fontSize = '12px';
+  actions.style.marginTop = '5px';
 
-// botón responder
-const replyBtn = document.createElement('button');
-replyBtn.textContent = "Responder";
-replyBtn.onclick = () => setReply(msg, id);
+  // reply
+  const replyBtn = document.createElement('button');
+  replyBtn.textContent = "Responder";
+  replyBtn.onclick = () => setReply(msg, id);
 
-actions.appendChild(replyBtn);
+  // reacciones rápidas
+  const emojis = ["👍","❤️","😂","😢","⭐"];
 
-// 🆕 contenedor flotante de reacciones
-const reactionBar = document.createElement('div');
-reactionBar.className = 'reaction-bar';
+  const reactContainer = document.createElement('span');
+  emojis.forEach(e => {
+    const b = document.createElement('button');
+    b.textContent = e;
+    b.onclick = () => addReaction(id, e);
+    reactContainer.appendChild(b);
+  });
 
-const emojis = ["👍","❤️","😂","😢","⭐"];
+  actions.appendChild(replyBtn);
+  actions.appendChild(reactContainer);
 
-emojis.forEach(e => {
-  const b = document.createElement('button');
-  b.textContent = e;
-  b.onclick = () => addReaction(id, e);
-  reactionBar.appendChild(b);
-});
+  wrapper.appendChild(actions);
 
-// hover logic
-wrapper.addEventListener('mouseenter', () => {
-  reactionBar.style.display = 'flex';
-});
-
-wrapper.addEventListener('mouseleave', () => {
-  reactionBar.style.display = 'none';
-});
-
-wrapper.appendChild(reactionBar);
-wrapper.appendChild(actions);
+  messagesEl.appendChild(wrapper);
 }
 
 async function sendMessage(){
