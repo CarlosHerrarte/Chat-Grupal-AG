@@ -1,0 +1,25 @@
+:root{
+  --bg:#e5ddd5; --me:#dcf8c6; --other:#ffffff; --accent:#075e54; --muted:#777;
+  font-family: "Helvetica Neue", Arial, sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);height:100vh;display:flex;flex-direction:column}
+.overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.35)}
+.card{background:#fff;padding:24px;border-radius:8px;width:320px;box-shadow:0 6px 18px rgba(0,0,0,0.2);text-align:center}
+.card input{width:100%;padding:10px;margin:8px 0;border-radius:6px;border:1px solid #ccc}
+.card button{padding:10px 14px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer}
+.hidden{display:none}
+.error{color:#c00;font-size:0.9rem;margin-top:6px}
+.topbar{height:64px;background:#075e54;color:#fff;padding:8px 12px;display:flex;align-items:center;justify-content:space-between}
+.topbar .title{font-weight:600}
+.messages{flex:1;padding:12px;overflow:auto;display:flex;flex-direction:column;gap:10px}
+.message{max-width:75%;padding:10px;border-radius:12px;box-shadow:0 1px 0 rgba(0,0,0,0.05);display:inline-block}
+.meta{font-size:0.75rem;color:var(--muted);margin-bottom:6px}
+.me{align-self:flex-end;background:var(--me)}
+.other{align-self:flex-start;background:var(--other)}
+.message img{max-width:240px;border-radius:8px;margin-top:6px}
+.composer{display:flex;padding:8px;gap:8px;background:transparent}
+.composer input[type="text"], .composer input[type="file"]{flex:1;padding:10px;border-radius:8px;border:1px solid #ccc}
+.composer button{background:var(--accent);color:#fff;border:none;padding:10px 12px;border-radius:8px;cursor:pointer}
+.avatar{width:44px;height:44px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-right:12px}
+.subtitle{font-size:0.85rem;color:#e6f0ee}
