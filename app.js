@@ -108,6 +108,19 @@ function renderMessage(messageId, msg){
 
   wrapper.appendChild(meta);
 
+  // ========================
+  // RESPUESTA (REPLY VIEW)
+  // ========================
+  if(msg.replyTo){
+
+    const replyBox = document.createElement('div');
+    replyBox.className = 'reply-box';
+
+    replyBox.textContent = `↪ Respondiendo a: ${msg.replyToText || 'mensaje'}`;
+
+    wrapper.appendChild(replyBox);
+  }
+
   if(msg.text){
     const p = document.createElement('div');
     p.textContent = msg.text;
@@ -121,10 +134,14 @@ function renderMessage(messageId, msg){
     wrapper.appendChild(img);
   }
 
-  // ===== MENÚ DE REACCIONES =====
+ // ========================
+  // MENÚ REACCIONES
+  // ========================
   const reactionMenu = document.createElement('div');
   reactionMenu.className = 'reaction-menu';
+
   const reactions = ['👍','❤️','😂','😮','😢','➕'];
+
   reactions.forEach(emoji => {
     const btn = document.createElement('span');
     btn.className = 'reaction-btn';
@@ -132,14 +149,40 @@ function renderMessage(messageId, msg){
     btn.onclick = () => reactToMessage(messageId, emoji);
     reactionMenu.appendChild(btn);
   });
+
   wrapper.appendChild(reactionMenu);
-  // ===== REACCIÓN GUARDADA =====
-  if(msg.reactions && msg.reactions[currentName]){
-    const reactionBadge = document.createElement('div');
-    reactionBadge.className = 'message-reaction';
-    reactionBadge.textContent = msg.reactions[currentName];
-    wrapper.appendChild(reactionBadge);
+
+  // ========================
+  // REACCIONES VISIBLES (AGRUPADAS)
+  // ========================
+  if(msg.reactions){
+
+    const counts = {};
+
+    Object.values(msg.reactions).forEach(r => {
+      counts[r] = (counts[r] || 0) + 1;
+    });
+
+    const reactionBox = document.createElement('div');
+    reactionBox.className = 'message-reaction';
+
+    reactionBox.textContent = Object.entries(counts)
+      .map(([emoji, count]) => `${emoji} ${count}`)
+      .join(' ');
+
+    wrapper.appendChild(reactionBox);
   }
+   // ========================
+  // BOTÓN RESPONDER
+  // ========================
+  const replyBtn = document.createElement('div');
+  replyBtn.textContent = "↩";
+  replyBtn.className = "reply-btn";
+
+  replyBtn.onclick = () => setReply(messageId, msg.text);
+
+  wrapper.appendChild(replyBtn);
+
   messagesEl.appendChild(wrapper);
 }
 
@@ -161,11 +204,15 @@ async function sendMessage(){
       name: currentName || 'Anónimo',
       text: text || null,
       imageUrl: imageUrl || null,
+      replyTo: replyTarget ? replyTarget.id : null,
+      replyToText: replyTarget ? replyTarget.text : null,
       timestamp: firebase.firestore.FieldValue.serverTimestamp()
     };
     await messagesCol.add(payload);
     textInput.value = '';
     fileInput.value = '';
+    replyTarget = null;
+    textInput.placeholder = "Escribe un mensaje...";
   } catch(err){
     console.error('send error', err);
     alert('Error al enviar. Revisa la consola.');
@@ -175,15 +222,14 @@ async function sendMessage(){
 }
 
 // Si hay nombre guardado en sesión y la contraseña fue validada anteriormente (navegador nuevo no guarda password):
-document.addEventListener('DOMContentLoaded', () => {
-  async function reactToMessage(messageId, emoji){
+async function reactToMessage(messageId, emoji){
 
   try{
 
     if(emoji === '➕'){
 
       const customEmoji = prompt(
-        'Abre el selector de emojis (Win + .) y pega aquí tu emoji'
+        'Presiona Win + . y copia aquí tu emoji'
       );
 
       if(!customEmoji) return;
@@ -191,14 +237,12 @@ document.addEventListener('DOMContentLoaded', () => {
       emoji = customEmoji;
     }
 
-    // Obtener documento actual para no sobrescribir reacciones existentes
     const msgRef = messagesCol.doc(messageId);
     const doc = await msgRef.get();
     const data = doc.data();
 
     const currentReactions = data.reactions || {};
 
-    // toggle: si ya tiene la misma reacción, la quita
     if(currentReactions[currentName] === emoji){
       delete currentReactions[currentName];
     } else {
@@ -209,8 +253,7 @@ document.addEventListener('DOMContentLoaded', () => {
       reactions: currentReactions
     }, { merge:true });
 
-  }
-  catch(err){
+  } catch(err){
     console.error(err);
   }
 
@@ -220,4 +263,11 @@ document.addEventListener('DOMContentLoaded', () => {
     nameInput.value = savedName;
     // De todas formas requiere volver a ingresar la clave por seguridad en esta implementación
   }
+let replyTarget = null;
+
+function setReply(id, text){
+  replyTarget = { id, text };
+
+  textInput.placeholder = "Respondiendo a un mensaje...";
+}
 });
