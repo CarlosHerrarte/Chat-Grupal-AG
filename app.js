@@ -1,12 +1,12 @@
 // CONFIGURACIÓN: reemplaza con tu config de Firebase (ver instrucciones)
 const firebaseConfig = {
-  apiKey: "AIzaSyAm-qj9NaW3L-_tlTX8kJ1FKfFg3G1UrYI",
-  authDomain: "hat-temporal-ag.firebaseapp.com",
-  projectId: "chat-temporal-ag",
-  storageBucket: "chat-temporal-ag.firebasestorage.app",
-  messagingSenderId: "995109559252",
-  appId: "1:995109559252:web:ab4ce8f42d9a152e53d441",
-  measurementId: "G-N7SNC1WH5B"
+  apiKey: "",
+  authDomain: "",
+  projectId: "",
+  storageBucket: "",
+  messagingSenderId: "",
+  appId: "",
+  measurementId: ""
 };
 
 const APP_PASSWORD = "10E)sF@4M1$b]";
